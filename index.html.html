@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProcureNGO - Système de Gestion des Achats</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0a0f1a;
+      --bg-secondary: #111827;
+      --bg-card: #1a2235;
+      --bg-elevated: #243049;
+      --fg-primary: #f1f5f9;
+      --fg-secondary: #94a3b8;
+      --fg-muted: #64748b;
+      --accent: #10b981;
+      --accent-light: #34d399;
+      --accent-dark: #059669;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --border: #2d3a52;
+      --sidebar-width: 260px;
+    }
+
+    * {
+      font-family: 'DM Sans', sans-serif;
+      box-sizing: border-box;
+    }
+
+    h1, h2, h3, .font-display {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    body {
+      background: var(--bg-primary);
+      color: var(--fg-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .login-bg {
+      background: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(16, 185, 129, 0.15), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(59, 130, 246, 0.1), transparent),
+        linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    .input-field {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      transition: all 0.2s ease;
+    }
+
+    .input-field:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+      outline: none;
+    }
+
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 100vh;
+      width: var(--sidebar-width);
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+      border-right: 1px solid var(--border);
+      z-index: 100;
+      transform: translateX(0);
+      transition: transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+
+    .nav-item {
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      color: var(--fg-secondary);
+      text-decoration: none;
+      border-left: 3px solid transparent;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-elevated);
+    }
+
+    .nav-item.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-left-color: var(--accent);
+      color: var(--fg-primary);
+    }
+
+    .main-content {
+      margin-left: var(--sidebar-width);
+      min-height: 100vh;
+      transition: margin-left 0.3s ease;
+    }
+
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 90;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .mobile-header {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: rgba(17, 24, 39, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      z-index: 80;
+      padding: 0 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .hamburger {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 5px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--fg-primary);
+      transition: all 0.3s ease;
+    }
+
+    .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+    .hamburger.active span:nth-child(2) { opacity: 0; }
+    .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+    .desktop-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(26, 34, 53, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+
+    .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-row { transition: background 0.2s ease; }
+    .table-row:hover { background: var(--bg-elevated); }
+
+    .status-pending { color: var(--warning); background: rgba(245, 158, 11, 0.15); }
+    .status-approved { color: var(--accent); background: rgba(16, 185, 129, 0.15); }
+    .status-rejected { color: var(--danger); background: rgba(239, 68, 68, 0.15); }
+    .status-delayed { color: var(--danger); background: rgba(239, 68, 68, 0.15); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    }
+
+    .animate-fadeIn { animation: fadeIn 0.4s ease forwards; }
+    .animate-slideInRight { animation: slideInRight 0.4s ease forwards; }
+
+    .progress-bar {
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent-light) 100%);
+      transition: width 0.5s ease;
+    }
+
+    .modal-overlay {
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .modal-body {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 640px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      margin: auto;
+    }
+
+    .mobile-cards { display: none; }
+    .mobile-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    /* Demo Assistant Styles */
+    .demo-overlay {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 380px;
+      max-width: calc(100vw - 40px);
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 16px;
+      padding: 20px;
+      z-index: 1000;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(16, 185, 129, 0.15);
+      animation: slideInRight 0.4s ease forwards;
+    }
+
+    .demo-overlay .demo-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .demo-overlay .demo-avatar {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .demo-overlay .demo-progress {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+
+    .demo-overlay .demo-progress-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #334155;
+      transition: all 0.3s ease;
+    }
+
+    .demo-overlay .demo-progress-dot.active {
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+    }
+
+    .demo-overlay .demo-progress-dot.completed {
+      background: #10b981;
+    }
+
+    .demo-overlay .demo-speech {
+      background: rgba(30, 41, 59, 0.5);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .demo-overlay .demo-speech::before {
+      content: '"';
+      position: absolute;
+      top: -8px;
+      left: 12px;
+      font-size: 24px;
+      color: rgba(16, 185, 129, 0.5);
+      font-family: Georgia, serif;
+    }
+
+    .demo-overlay .demo-highlight {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .demo-overlay .demo-highlight:hover {
+      background: rgba(59, 130, 246, 0.25);
+      transform: translateX(4px);
+    }
+
+    .demo-overlay .demo-highlight.pulse {
+      animation: pulse-glow 2s infinite;
+    }
+
+    .highlight-target {
+      position: relative;
+      z-index: 999;
+      animation: pulse-glow 2s infinite;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-left: 0; }
+      .mobile-header { display: flex; }
+      .desktop-header { top: 60px; }
+      .demo-overlay {
+        bottom: 80px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .desktop-table { display: none; }
+      .mobile-cards { display: block; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <!-- Login Screen -->
+  <div id="loginScreen" class="login-bg min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-6 sm:mb-8 animate-fadeIn">
+        <div class="inline-flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+            <svg class="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-display font-bold text-white">ProcureNGO</h1>
+        </div>
+        <p class="text-sm sm:text-base text-slate-400">Systeme de Gestion Electronique des Achats</p>
+      </div>
+
+      <div class="card rounded-2xl p-6 sm:p-8 animate-fadeIn">
+        <h2 class="font-display text-lg sm:text-xl font-semibold mb-5 sm:mb-6 text-center">Connexion</h2>
+        
+        <form id="loginForm" class="space-y-4 sm:space-y-5">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Adresse email</label>
+            <input type="email" id="loginEmail" required class="input-field w-full px-4 py-3 rounded-lg text-white placeholder-slate-500 text-base" placeholder="utilisateur@ong.org">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Mot de passe</label>
+            <div class="relative">
+              <input type="password" id="loginPassword" required class="input-field w-full px-4 py-3 rounded-lg text-white placeholder-slate-500 pr-12 text-base" placeholder="Mot de passe">
+              <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1">
+                <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Role utilisateur</label>
+            <select id="loginRole" required class="input-field w-full px-4 py-3 rounded-lg text-white cursor-pointer text-base">
+              <option value="">Selectionnez un role</option>
+              <option value="demandeur">Demandeur</option>
+              <option value="manager">Manager</option>
+              <option value="finance">Finance</option>
+              <option value="procurement">Procurement Officer</option>
+              <option value="admin">Administrateur</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn-primary w-full py-3 rounded-lg font-semibold text-white text-base">Se connecter</button>
+        </form>
+
+        <div class="mt-5 sm:mt-6 pt-5 sm:pt-6 border-t border-slate-700">
+          <p class="text-xs text-slate-500 text-center mb-3">Comptes de demonstration</p>
+          <div class="grid grid-cols-2 gap-2 text-xs sm:text-sm" id="quickLoginButtons">
+            <button onclick="quickLogin('demandeur')" class="px-3 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">Demandeur</button>
+            <button onclick="quickLogin('manager')" class="px-3 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">Manager</button>
+            <button onclick="quickLogin('finance')" class="px-3 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">Finance</button>
+            <button onclick="quickLogin('procurement')" class="px-3 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">Procurement</button>
+          </div>
+          
+          <!-- Demo Launch Button -->
+          <button onclick="startDemoFromLogin()" class="w-full mt-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Lancer la demonstration guidee
+          </button>
+        </div>
+      </div>
+
+      <p class="text-center text-slate-600 text-xs sm:text-sm mt-4 sm:mt-6 animate-fadeIn">ONG Internationale - Tous droits reserves 2025</p>
+    </div>
+  </div>
+
+  <!-- Main Application -->
+  <div id="mainApp" class="hidden">
+    
+    <header class="mobile-header">
+      <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <span class="font-display font-semibold text-white">ProcureNGO</span>
+      </div>
+      <button class="w-10 h-10 flex items-center justify-center text-slate-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="p-4 sm:p-5 border-b border-slate-700/50">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h1 class="font-display font-bold text-white text-sm sm:text-base">ProcureNGO</h1>
+            <p class="text-xs text-slate-500">v2.4.1</p>
+          </div>
+          <button class="lg:hidden p-2 text-slate-400 hover:text-white" onclick="closeSidebar()">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <nav class="flex-1 py-2 sm:py-4 overflow-y-auto">
+        <div class="px-4 py-2 mb-1"><span class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Principal</span></div>
+        
+        <button onclick="showModule('dashboard')" data-nav="dashboard" class="nav-item active w-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          <span class="text-sm">Tableau de bord</span>
+        </button>
+
+        <button onclick="showModule('requisitions')" data-nav="requisitions" class="nav-item w-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span class="text-sm">Requisitions</span>
+          <span class="ml-auto bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full">3</span>
+        </button>
+
+        <button onclick="showModule('workflow')" data-nav="workflow" class="nav-item w-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span class="text-sm">Workflow</span>
+        </button>
+
+        <button onclick="showModule('tracking')" data-nav="tracking" class="nav-item w-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+          <span class="text-sm">Suivi achats</span>
+        </button>
+
+        <div class="px-4 py-2 mt-4 sm:mt-6 mb-1"><span class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Gestion</span></div>
+
+        <button onclick="showModule('suppliers')" data-nav="suppliers" class="nav-item w-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          <span class="text-sm">Fournisseurs</span>
+        </button>
+
+        <button onclick="showModule('grn')" data-nav="grn" class="nav-item w-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+          <span class="text-sm">Reception (GRN)</span>
+        </button>
+
+        <button onclick="showModule('reporting')" data-nav="reporting" class="nav-item w-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span class="text-sm">Rapports</span>
+        </button>
+
+        <button onclick="showModule('archive')" data-nav="archive" class="nav-item w-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+          <span class="text-sm">Archives</span>
+        </button>
+
+        <div class="px-4 py-2 mt-4 sm:mt-6 mb-1"><span class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">Administration</span></div>
+
+        <button onclick="showModule('users')" data-nav="users" class="nav-item w-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <span class="text-sm">Utilisateurs</span>
+        </button>
+      </nav>
+
+      <div class="p-3 sm:p-4 border-t border-slate-700/50">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm" id="userAvatar">JD</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-white truncate" id="userName">Jean Dupont</p>
+            <p class="text-xs text-slate-500 truncate" id="userRole">Demandeur</p>
+          </div>
+          <button onclick="logout()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition" title="Deconnexion">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content" id="mainContent">
+      <header class="desktop-header">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="font-display text-lg sm:text-xl font-semibold text-white" id="pageTitle">Tableau de bord</h2>
+            <p class="text-sm text-slate-400" id="pageSubtitle">Vue d'ensemble des activites d'achat</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <!-- Demo Button -->
+            <button onclick="toggleDemo()" id="demoToggleBtn" class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-medium transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span id="demoBtnText">Demo guidee</span>
+            </button>
+            <div class="text-sm text-slate-400 hidden md:block" id="currentDate"></div>
+          </div>
+        </div>
+      </header>
+
+      <div class="p-4 sm:p-6" id="contentArea"></div>
+    </main>
+  </div>
+
+  <!-- Modal Container -->
+  <div id="modalContainer" class="hidden">
+    <div class="modal-overlay fixed inset-0 z-150" onclick="closeModal()"></div>
+    <div class="modal-content"><div class="modal-body" id="modalBody"></div></div>
+  </div>
+
+  <!-- Demo Overlay Container -->
+  <div id="demoOverlay"></div>
+
+  <script>
+    // ==================== DEMO SCRIPT ====================
+    const DEMO_SCRIPT = [
+      {
+        step: 1,
+        title: "Connexion au systeme",
+        instruction: "Cliquez sur le role 'Manager' pour vous connecter",
+        message: "Le systeme repose sur un controle d'acces base sur les roles afin de garantir la securite et la tracabilite des operations. Chaque utilisateur dispose de permissions specifiques selon sa fonction.",
+        target: "quickLoginButtons",
+        action: 'login'
+      },
+      {
+        step: 2,
+        title: "Tableau de bord",
+        instruction: "Observez les indicateurs cles de performance",
+        message: "Le tableau de bord fournit une visibilite en temps reel sur l'ensemble des processus d'achat. Les KPIs permettent un suivi immediate des metriques critiques et ameliorent la prise de decision.",
+        target: null,
+        action: 'observe'
+      },
+      {
+        step: 3,
+        title: "Creation d'une requisition",
+        instruction: "Accedez au module Requisitions pour voir les demandes",
+        message: "Chaque requisition est structuree avec des donnees budgetaires, un identifiant unique et des pieces justificatives. Le systeme genere automatiquement les references pour garantir la tracabilite.",
+        target: 'requisitions',
+        action: 'navigate'
+      },
+      {
+        step: 4,
+        title: "Workflow de validation",
+        instruction: "Accedez au module Workflow",
+        message: "Le systeme automatise le circuit de validation hierarchique : Demandeur puis Manager puis Finance puis Procurement. Chaque etape est tracee avec horodatage et commentaires.",
+        target: 'workflow',
+        action: 'navigate'
+      },
+      {
+        step: 5,
+        title: "Suivi des achats",
+        instruction: "Consultez le module Suivi des achats",
+        message: "Le suivi permet d'identifier en temps reel les demandes en cours, les retards potentiels et les etapes bloquantes. Les alertes automatiques notifient les acteurs concernes.",
+        target: 'tracking',
+        action: 'navigate'
+      },
+      {
+        step: 6,
+        title: "Gestion des fournisseurs",
+        instruction: "Explorez le module Fournisseurs",
+        message: "Le systeme integre la gestion complete des fournisseurs : prequalification, evaluation de performance, historique des commandes et suivi de conformite.",
+        target: 'suppliers',
+        action: 'navigate'
+      },
+      {
+        step: 7,
+        title: "Reception des biens (GRN)",
+        instruction: "Decouvrez le module de reception",
+        message: "Ce module permet de valider la reception des biens et services avec controle qualite, documentation associee et mise a jour automatique des stocks.",
+        target: 'grn',
+        action: 'navigate'
+      },
+      {
+        step: 8,
+        title: "Reporting et analytics",
+        instruction: "Consultez les indicateurs de performance",
+        message: "Des tableaux de bord analytiques permettent une evaluation strategique des achats : taux d'approbation, delais moyens, economies realisees et conformite budgetaire.",
+        target: 'reporting',
+        action: 'navigate'
+      },
+      {
+        step: 9,
+        title: "Archivage documentaire",
+        instruction: "Terminez par le module Archives",
+        message: "Tous les documents sont archives de maniere securisee avec tracabilite complete, recherche rapide et gestion des droits d'acces par profil utilisateur.",
+        target: 'archive',
+        action: 'navigate'
+      },
+      {
+        step: 10,
+        title: "Demonstration terminee",
+        instruction: "Vous avez parcouru toutes les fonctionnalites",
+        message: "Ce systeme ERP repond aux exigences des organisations internationales : securite, tracabilite, workflow structure et reporting avance. Merci d'avoir suivi cette demonstration.",
+        target: null,
+        action: 'end'
+      }
+    ];
+
+    // Demo State
+    let demoState = {
+      active: false,
+      currentStep: 0
+    };
+
+    // ==================== STATE ====================
+    const AppState = {
+      currentUser: null,
+      currentModule: 'dashboard',
+      sidebarOpen: false,
+      requisitions: [
+        { id: 'PR-2025-00047', department: 'Logistique', project: 'Ukraine Emergency', description: 'Vehicules 4x4 pour transport humanitaire', quantity: 3, budget: 75000, budgetLine: 'LOG-2025-VEH', status: 'pending_manager', createdAt: '2025-01-10', requester: 'Marie Kone', attachments: 2, currentStep: 'manager' },
+        { id: 'PR-2025-00046', department: 'Sante', project: 'WASH Ethiopia', description: 'Kits medicaux premiers secours', quantity: 500, budget: 12500, budgetLine: 'SAN-2025-KIT', status: 'pending_finance', createdAt: '2025-01-09', requester: 'Dr. Amadou Diallo', attachments: 1, currentStep: 'finance' },
+        { id: 'PR-2025-00045', department: 'Education', project: 'School Feeding Mali', description: 'Fournitures scolaires cycle primaire', quantity: 2000, budget: 8500, budgetLine: 'EDU-2025-FOU', status: 'approved', createdAt: '2025-01-08', requester: 'Fatou Ndiaye', attachments: 3, currentStep: 'completed' },
+        { id: 'PR-2025-00044', department: 'Nutrition', project: 'CMAM Niger', description: 'Aliments therapeutiques ATPE', quantity: 1500, budget: 45000, budgetLine: 'NUT-2025-ATP', status: 'rejected', createdAt: '2025-01-07', requester: 'Ibrahim Toure', attachments: 1, currentStep: 'rejected', rejectionReason: 'Budget depasse' },
+        { id: 'PR-2025-00043', department: 'Abri', project: 'Refugees Cameroon', description: 'Baches et abris durgence', quantity: 300, budget: 28000, budgetLine: 'ABR-2025-BAC', status: 'pending_procurement', createdAt: '2025-01-06', requester: 'Aminata Sow', attachments: 2, currentStep: 'procurement' },
+        { id: 'PR-2025-00042', department: 'WASH', project: 'Cholera Response Haiti', description: 'Systemes de purification deau', quantity: 50, budget: 32000, budgetLine: 'WASH-2025-PUR', status: 'delayed', createdAt: '2025-01-04', requester: 'Jean-Pierre Louis', attachments: 2, currentStep: 'procurement', delayDays: 5 },
+        { id: 'PR-2025-00041', department: 'Protection', project: 'GBV Prevention DRC', description: 'Materiaux de formation IEC', quantity: 1000, budget: 5500, budgetLine: 'PRO-2025-IEC', status: 'approved', createdAt: '2025-01-03', requester: 'Esperance Mwamba', attachments: 4, currentStep: 'completed' }
+      ],
+      suppliers: [
+        { id: 'SUP-001', name: 'Global Medical Supplies Ltd', country: 'France', category: 'Medical', status: 'qualified', orders: 45, rating: 4.8, lastOrder: '2025-01-05' },
+        { id: 'SUP-002', name: 'Sahara Logistics International', country: 'Maroc', category: 'Transport', status: 'qualified', orders: 23, rating: 4.5, lastOrder: '2025-01-08' },
+        { id: 'SUP-003', name: 'AfriBuild Construction', country: 'Kenya', category: 'Construction', status: 'qualified', orders: 18, rating: 4.2, lastOrder: '2024-12-20' },
+        { id: 'SUP-004', name: 'WaterTech Solutions', country: 'Allemagne', category: 'WASH', status: 'pending', orders: 5, rating: 3.9, lastOrder: '2024-11-15' },
+        { id: 'SUP-005', name: 'NutriAid International', country: 'Belgique', category: 'Nutrition', status: 'qualified', orders: 67, rating: 4.9, lastOrder: '2025-01-10' },
+        { id: 'SUP-006', name: 'SecureTrans Freight', country: 'Emirats', category: 'Transport', status: 'suspended', orders: 12, rating: 3.2, lastOrder: '2024-09-30' }
+      ],
+      users: [
+        { id: 1, name: 'Jean Dupont', email: 'j.dupont@ong.org', role: 'demandeur', department: 'Logistique', active: true },
+        { id: 2, name: 'Marie Kone', email: 'm.kone@ong.org', role: 'demandeur', department: 'Sante', active: true },
+        { id: 3, name: 'Philippe Martin', email: 'p.martin@ong.org', role: 'manager', department: 'Operations', active: true },
+        { id: 4, name: 'Sophie Laurent', email: 's.laurent@ong.org', role: 'finance', department: 'Finance', active: true },
+        { id: 5, name: 'Ahmed Benali', email: 'a.benali@ong.org', role: 'procurement', department: 'Achats', active: true },
+        { id: 6, name: 'Admin System', email: 'admin@ong.org', role: 'admin', department: 'IT', active: true }
+      ],
+      notifications: [
+        { id: 1, type: 'approval', message: 'PR-2025-00046 en attente de validation finance', time: 'Il y a 2h', read: false },
+        { id: 2, type: 'delay', message: 'PR-2025-00042 a depasse le delai de 5 jours', time: 'Il y a 4h', read: false },
+        { id: 3, type: 'info', message: 'Nouveau fournisseur prequalifie: NutriAid International', time: 'Hier', read: true },
+        { id: 4, type: 'success', message: 'PR-2025-00045 approuvee et transmise aux achats', time: 'Hier', read: true }
+      ],
+      grn: [
+        { id: 'GRN-2025-0012', requisitionId: 'PR-2025-00041', supplier: 'NutriAid International', items: 'Materiaux IEC', receivedDate: '2025-01-09', status: 'verified', quality: 'conforme', comments: 'Reception complete, qualite OK' },
+        { id: 'GRN-2025-0011', requisitionId: 'PR-2025-00038', supplier: 'Global Medical Supplies', items: 'Kits medicaux', receivedDate: '2025-01-07', status: 'partial', quality: 'partiel', comments: 'Manque 50 unites, livraison partielle' }
+      ]
+    };
+
+    // ==================== INITIALIZATION ====================
+    document.addEventListener('DOMContentLoaded', function() {
+      updateDate();
+      setInterval(updateDate, 60000);
+      window.addEventListener('resize', handleResize);
+      handleResize();
+    });
+
+    function handleResize() {
+      const isMobile = window.innerWidth <= 1024;
+      if (!isMobile && AppState.sidebarOpen) closeSidebar();
+    }
+
+    function updateDate() {
+      const now = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const el = document.getElementById('currentDate');
+      if (el) el.textContent = now.toLocaleDateString('fr-FR', options);
+    }
+
+    // ==================== DEMO FUNCTIONS ====================
+    function startDemoFromLogin() {
+      demoState.active = true;
+      demoState.currentStep = 0;
+      showDemoStep();
+    }
+
+    function startDemo() {
+      demoState.active = true;
+      demoState.currentStep = 1;
+      showDemoStep();
+    }
+
+    function toggleDemo() {
+      if (demoState.active) {
+        endDemo();
+      } else {
+        startDemo();
+      }
+    }
+
+    function endDemo() {
+      demoState.active = false;
+      demoState.currentStep = 0;
+      const overlay = document.getElementById('demoOverlay');
+      if (overlay) overlay.innerHTML = '';
+      removeHighlights();
+      updateDemoButton();
+    }
+
+    function showDemoStep() {
+      if (!demoState.active || demoState.currentStep >= DEMO_SCRIPT.length) {
+        endDemo();
+        return;
+      }
+
+      const step = DEMO_SCRIPT[demoState.currentStep];
+      const overlay = document.getElementById('demoOverlay');
+      
+      removeHighlights();
+      
+      let highlightTarget = null;
+      if (step.target) {
+        if (step.action === 'login') {
+          // Highlight login buttons
+          const buttons = document.querySelectorAll('#quickLoginButtons button');
+          buttons.forEach(btn => btn.classList.add('highlight-target'));
+        } else {
+          highlightTarget = document.querySelector(`[data-nav="${step.target}"]`);
+          if (highlightTarget) {
+            highlightTarget.classList.add('highlight-target');
+          }
+        }
+      }
+
+      overlay.innerHTML = `
+        <div class="demo-overlay">
+          <div class="demo-header">
+            <div class="demo-avatar">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-emerald-400 font-bold text-sm">Etape ${step.step}/${DEMO_SCRIPT.length}</h3>
+              <p class="text-white font-semibold">${step.title}</p>
+            </div>
+            <button onclick="endDemo()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          
+          <div class="demo-progress">
+            ${DEMO_SCRIPT.map((s, i) => `
+              <div class="demo-progress-dot ${i < demoState.currentStep ? 'completed' : ''} ${i === demoState.currentStep ? 'active' : ''}"></div>
+            `).join('')}
+          </div>
+          
+          <div class="demo-speech">
+            <p class="text-slate-300 text-sm leading-relaxed">${step.message}</p>
+          </div>
+          
+          ${step.target ? `
+            <div class="demo-highlight pulse" onclick="executeDemoAction('${step.action}', '${step.target || ''}')">
+              <svg class="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
+              </svg>
+              <span class="text-sm text-slate-200">${step.instruction}</span>
+              <svg class="w-4 h-4 text-blue-400 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          ` : `
+            <div class="flex items-start gap-3 p-3 bg-slate-800/50 rounded-lg mb-4">
+              <svg class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              <p class="text-sm text-slate-300">${step.instruction}</p>
+            </div>
+          `}
+          
+          <div class="flex gap-2">
+            ${demoState.currentStep > 0 ? `
+              <button onclick="prevDemoStep()" class="flex-1 px-4 py-2.5 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 transition text-sm">
+                Precedent
+              </button>
+            ` : ''}
+            <button onclick="nextDemoStep()" class="flex-1 btn-primary px-4 py-2.5 rounded-lg font-medium text-white text-sm">
+              ${step.action === 'end' ? 'Terminer' : 'Suivant'}
+            </button>
+          </div>
+        </div>
+      `;
+      
+      updateDemoButton();
+    }
+
+    function executeDemoAction(action, target) {
+      removeHighlights();
+      
+      if (action === 'login') {
+        quickLogin('manager');
+        setTimeout(() => {
+          demoState.currentStep++;
+          showDemoStep();
+        }, 500);
+      } else if (action === 'navigate' && target) {
+        showModule(target);
+        setTimeout(() => {
+          demoState.currentStep++;
+          showDemoStep();
+        }, 300);
+      }
+    }
+
+    function nextDemoStep() {
+      demoState.currentStep++;
+      if (demoState.currentStep >= DEMO_SCRIPT.length) {
+        endDemo();
+      } else {
+        showDemoStep();
+      }
+    }
+
+    function prevDemoStep() {
+      if (demoState.currentStep > 0) {
+        demoState.currentStep--;
+        showDemoStep();
+      }
+    }
+
+    function removeHighlights() {
+      document.querySelectorAll('.highlight-target').forEach(el => {
+        el.classList.remove('highlight-target');
+      });
+    }
+
+    function updateDemoButton() {
+      const btn = document.getElementById('demoToggleBtn');
+      const text = document.getElementById('demoBtnText');
+      if (btn && text) {
+        if (demoState.active) {
+          text.textContent = 'Arreter la demo';
+          btn.classList.remove('from-blue-600', 'to-indigo-600', 'hover:from-blue-700', 'hover:to-indigo-700');
+          btn.classList.add('from-red-600', 'to-rose-600', 'hover:from-red-700', 'hover:to-rose-700');
+        } else {
+          text.textContent = 'Demo guidee';
+          btn.classList.add('from-blue-600', 'to-indigo-600', 'hover:from-blue-700', 'hover:to-indigo-700');
+          btn.classList.remove('from-red-600', 'to-rose-600', 'hover:from-red-700', 'hover:to-rose-700');
+        }
+      }
+    }
+
+    // ==================== SIDEBAR ====================
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const hamburger = document.getElementById('hamburgerBtn');
+      
+      AppState.sidebarOpen = !AppState.sidebarOpen;
+      
+      if (AppState.sidebarOpen) {
+        sidebar.classList.add('open');
+        overlay.classList.add('active');
+        hamburger.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      } else {
+        closeSidebar();
+      }
+    }
+
+    function closeSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const hamburger = document.getElementById('hamburgerBtn');
+      
+      AppState.sidebarOpen = false;
+      sidebar.classList.remove('open');
+      overlay.classList.remove('active');
+      hamburger.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    // ==================== LOGIN ====================
+    function togglePassword() {
+      const input = document.getElementById('loginPassword');
+      const icon = document.getElementById('eyeIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>';
+      } else {
+        input.type = 'password';
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+      }
+    }
+
+    function quickLogin(role) {
+      const users = {
+        demandeur: { name: 'Jean Dupont', email: 'j.dupont@ong.org', initials: 'JD' },
+        manager: { name: 'Philippe Martin', email: 'p.martin@ong.org', initials: 'PM' },
+        finance: { name: 'Sophie Laurent', email: 's.laurent@ong.org', initials: 'SL' },
+        procurement: { name: 'Ahmed Benali', email: 'a.benali@ong.org', initials: 'AB' },
+        admin: { name: 'Admin System', email: 'admin@ong.org', initials: 'AS' }
+      };
+      
+      const roleNames = {
+        demandeur: 'Demandeur',
+        manager: 'Manager',
+        finance: 'Finance',
+        procurement: 'Procurement Officer',
+        admin: 'Administrateur'
+      };
+
+      AppState.currentUser = {
+        role: role,
+        name: users[role].name,
+        email: users[role].email,
+        initials: users[role].initials,
+        roleName: roleNames[role]
+      };
+
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      updateUserDisplay();
+      showModule('dashboard');
+      
+      // Continue demo if active
+      if (demoState.active && demoState.currentStep === 0) {
+        demoState.currentStep = 1;
+        setTimeout(showDemoStep, 500);
+      }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const role = document.getElementById('loginRole').value;
+      if (role) quickLogin(role);
+    });
+
+    function logout() {
+      AppState.currentUser = null;
+      document.getElementById('mainApp').classList.add('hidden');
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('loginForm').reset();
+      endDemo();
+    }
+
+    function updateUserDisplay() {
+      if (AppState.currentUser) {
+        document.getElementById('userName').textContent = AppState.currentUser.name;
+        document.getElementById('userRole').textContent = AppState.currentUser.roleName;
+        document.getElementById('userAvatar').textContent = AppState.currentUser.initials;
+      }
+    }
+
+    // ==================== NAVIGATION ====================
+    function showModule(moduleName) {
+      AppState.currentModule = moduleName;
+      if (window.innerWidth <= 1024) closeSidebar();
+      
+      document.querySelectorAll('[data-nav]').forEach(btn => btn.classList.remove('active'));
+      const activeNav = document.querySelector(`[data-nav="${moduleName}"]`);
+      if (activeNav) activeNav.classList.add('active');
+
+      const titles = {
+        dashboard: { title: 'Tableau de bord', subtitle: 'Vue d\'ensemble des activites d\'achat' },
+        requisitions: { title: 'Requisitions d\'achat', subtitle: 'Gestion des demandes d\'achat' },
+        workflow: { title: 'Workflow de validation', subtitle: 'Processus d\'approbation' },
+        tracking: { title: 'Suivi des achats', subtitle: 'Suivi des commandes en cours' },
+        suppliers: { title: 'Gestion fournisseurs', subtitle: 'Annuaire et performance' },
+        grn: { title: 'Reception (GRN)', subtitle: 'Goods Receipt Note' },
+        reporting: { title: 'Rapports & Analytics', subtitle: 'Statistiques et export' },
+        archive: { title: 'Archives documentaires', subtitle: 'Recherche et historique' },
+        users: { title: 'Gestion utilisateurs', subtitle: 'Comptes et permissions' }
+      };
+
+      const pageInfo = titles[moduleName] || { title: moduleName, subtitle: '' };
+      document.getElementById('pageTitle').textContent = pageInfo.title;
+      document.getElementById('pageSubtitle').textContent = pageInfo.subtitle;
+
+      const content = document.getElementById('contentArea');
+      content.innerHTML = '';
+      content.classList.add('animate-fadeIn');
+      
+      switch(moduleName) {
+        case 'dashboard': renderDashboard(); break;
+        case 'requisitions': renderRequisitions(); break;
+        case 'workflow': renderWorkflow(); break;
+        case 'tracking': renderTracking(); break;
+        case 'suppliers': renderSuppliers(); break;
+        case 'grn': renderGRN(); break;
+        case 'reporting': renderReporting(); break;
+        case 'archive': renderArchive(); break;
+        case 'users': renderUsers(); break;
+      }
+    }
+
+    // ==================== DASHBOARD ====================
+    function renderDashboard() {
+      const stats = calculateStats();
+      const content = document.getElementById('contentArea');
+      
+      content.innerHTML = `
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+          <div class="stat-card rounded-xl p-4 sm:p-5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-slate-400 text-xs sm:text-sm">Total requisitions</span>
+              <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              </div>
+            </div>
+            <p class="text-2xl sm:text-3xl font-display font-bold text-white">${stats.total}</p>
+          </div>
+          <div class="stat-card rounded-xl p-4 sm:p-5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-slate-400 text-xs sm:text-sm">En attente</span>
+              <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+            </div>
+            <p class="text-2xl sm:text-3xl font-display font-bold text-amber-400">${stats.pending}</p>
+          </div>
+          <div class="stat-card rounded-xl p-4 sm:p-5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-slate-400 text-xs sm:text-sm">Approuvees</span>
+              <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+            </div>
+            <p class="text-2xl sm:text-3xl font-display font-bold text-emerald-400">${stats.approved}</p>
+          </div>
+          <div class="stat-card rounded-xl p-4 sm:p-5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-slate-400 text-xs sm:text-sm">Rejetees</span>
+              <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+            </div>
+            <p class="text-2xl sm:text-3xl font-display font-bold text-red-400">${stats.rejected}</p>
+          </div>
+          <div class="stat-card rounded-xl p-4 sm:p-5 col-span-2 lg:col-span-1">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-slate-400 text-xs sm:text-sm">En retard</span>
+              <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              </div>
+            </div>
+            <p class="text-2xl sm:text-3xl font-display font-bold text-red-400">${stats.delayed}</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+          <div class="card rounded-xl p-4 sm:p-6 lg:col-span-2">
+            <h3 class="font-display font-semibold text-white mb-4 text-sm sm:text-base">Requisitions par statut</h3>
+            <div style="height: 250px;"><canvas id="statusChart"></canvas></div>
+          </div>
+          <div class="card rounded-xl p-4 sm:p-6">
+            <h3 class="font-display font-semibold text-white mb-4 text-sm sm:text-base">Budget par departement</h3>
+            <div style="height: 250px;"><canvas id="budgetChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div class="card rounded-xl p-4 sm:p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-display font-semibold text-white text-sm sm:text-base">Requisitions recentes</h3>
+              <button onclick="showModule('requisitions')" class="text-xs sm:text-sm text-emerald-400 hover:text-emerald-300">Voir tout</button>
+            </div>
+            <div class="space-y-2 sm:space-y-3">
+              ${AppState.requisitions.slice(0, 4).map(req => `
+                <div class="flex items-center gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition cursor-pointer" onclick="viewRequisition('${req.id}')">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs sm:text-sm font-medium text-white truncate">${req.id}</p>
+                    <p class="text-xs text-slate-400 truncate">${req.description.substring(0, 30)}...</p>
+                  </div>
+                  <span class="px-2 py-1 text-xs rounded-full whitespace-nowrap ${getStatusClass(req.status)}">${getStatusLabel(req.status)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="card rounded-xl p-4 sm:p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-display font-semibold text-white text-sm sm:text-base">Notifications</h3>
+              <span class="text-xs text-slate-500">4 non lues</span>
+            </div>
+            <div class="space-y-2 sm:space-y-3">
+              ${AppState.notifications.map(notif => `
+                <div class="flex gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg ${notif.read ? 'bg-slate-800/30' : 'bg-emerald-500/10 border border-emerald-500/20'}">
+                  <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${notif.type === 'approval' ? 'bg-amber-500/20 text-amber-400' : notif.type === 'delay' ? 'bg-red-500/20 text-red-400' : notif.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}">
+                    ${getNotificationIcon(notif.type)}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs sm:text-sm text-white">${notif.message}</p>
+                    <p class="text-xs text-slate-500 mt-1">${notif.time}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+
+      setTimeout(initDashboardCharts, 100);
+    }
+
+    function calculateStats() {
+      return {
+        total: AppState.requisitions.length,
+        pending: AppState.requisitions.filter(r => r.status.includes('pending')).length,
+        approved: AppState.requisitions.filter(r => r.status === 'approved').length,
+        rejected: AppState.requisitions.filter(r => r.status === 'rejected').length,
+        delayed: AppState.requisitions.filter(r => r.status === 'delayed').length
+      };
+    }
+
+    function initDashboardCharts() {
+      const statusCtx = document.getElementById('statusChart');
+      if (statusCtx) {
+        new Chart(statusCtx, {
+          type: 'bar',
+          data: {
+            labels: ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun'],
+            datasets: [
+              { label: 'Approuvees', data: [12, 19, 15, 22, 18, 25], backgroundColor: '#10b981', borderRadius: 4 },
+              { label: 'En attente', data: [5, 8, 6, 4, 7, 3], backgroundColor: '#f59e0b', borderRadius: 4 },
+              { label: 'Rejetees', data: [2, 3, 1, 2, 1, 1], backgroundColor: '#ef4444', borderRadius: 4 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', labels: { color: '#94a3b8', usePointStyle: true, font: { size: 11 } } } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } },
+              y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: { size: 11 } } }
+            }
+          }
+        });
+      }
+
+      const budgetCtx = document.getElementById('budgetChart');
+      if (budgetCtx) {
+        new Chart(budgetCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Logistique', 'Sante', 'Education', 'Nutrition', 'WASH'],
+            datasets: [{ data: [75000, 12500, 8500, 45000, 32000], backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'], borderWidth: 0 }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', usePointStyle: true, padding: 12, font: { size: 11 } } } },
+            cutout: '60%'
+          }
+        });
+      }
+    }
+
+    // ==================== OTHER MODULES (simplified for brevity) ====================
+    function renderRequisitions() {
+      const content = document.getElementById('contentArea');
+      content.innerHTML = `
+        <div class="flex flex-col gap-3 sm:gap-4 mb-6">
+          <button onclick="openNewRequisitionModal()" class="btn-primary w-full sm:w-auto px-5 py-2.5 rounded-lg font-medium text-white inline-flex items-center justify-center gap-2 text-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Nouvelle requisition
+          </button>
+        </div>
+        <div class="card rounded-xl p-4 sm:p-6">
+          <div class="space-y-3">
+            ${AppState.requisitions.map(req => `
+              <div class="flex items-center gap-4 p-4 bg-slate-800/50 rounded-lg hover:bg-slate-800 transition cursor-pointer" onclick="viewRequisition('${req.id}')">
+                <div class="flex-1 min-w-0">
+                  <span class="font-mono text-sm text-emerald-400">${req.id}</span>
+                  <p class="text-sm text-white mt-1">${req.description}</p>
+                  <p class="text-xs text-slate-500 mt-1">${req.department} | ${formatCurrency(req.budget)}</p>
+                </div>
+                <span class="px-3 py-1 text-xs rounded-full ${getStatusClass(req.status)}">${getStatusLabel(req.status)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderWorkflow() {
+      const content = document.getElementById('contentArea');
+      const pendingItems = AppState.requisitions.filter(r => r.status.includes('pending'));
+      content.innerHTML = `
+        <div class="card rounded-xl p-4 sm:p-6 mb-6">
+          <h3 class="font-display font-semibold text-white mb-4">En attente de validation (${pendingItems.length})</h3>
+          <div class="space-y-3">
+            ${pendingItems.map(req => `
+              <div class="p-4 bg-slate-800/50 rounded-lg flex items-center justify-between">
+                <div>
+                  <span class="font-mono text-sm text-emerald-400">${req.id}</span>
+                  <p class="text-sm text-white">${req.description}</p>
+                </div>
+                <span class="px-3 py-1 text-xs rounded-full ${getStatusClass(req.status)}">${getStatusLabel(req.status)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div class="card rounded-xl p-4 sm:p-6">
+          <h3 class="font-display font-semibold text-white mb-4">Processus de validation</h3>
+          <div class="flex items-center justify-between p-4">
+            ${['Demandeur', 'Manager', 'Finance', 'Achats', 'Termine'].map((label, i) => `
+              <div class="flex flex-col items-center">
+                <div class="w-12 h-12 rounded-full ${i < 2 ? 'bg-emerald-500' : 'bg-slate-600'} flex items-center justify-center mb-2">
+                  <span class="text-white font-bold">${i + 1}</span>
+                </div>
+                <span class="text-xs text-slate-400">${label}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTracking() {
+      const content = document.getElementById('contentArea');
+      content.innerHTML = `
+        <div class="flex flex-wrap gap-2 mb-6">
+          <button class="px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 font-medium text-sm">Tous</button>
+          <button class="px-4 py-2 rounded-lg bg-slate-800 text-slate-400 text-sm">En cours</button>
+          <button class="px-4 py-2 rounded-lg bg-slate-800 text-slate-400 text-sm">Approuve</button>
+        </div>
+        <div class="card rounded-xl p-4 sm:p-6">
+          <div class="space-y-3">
+            ${AppState.requisitions.slice(0, 5).map(req => `
+              <div class="flex items-center gap-4 p-4 bg-slate-800/50 rounded-lg">
+                <span class="font-mono text-sm text-emerald-400">${req.id}</span>
+                <div class="flex-1"><p class="text-sm text-white">${req.description}</p></div>
+                <div class="h-2 w-24 bg-slate-700 rounded-full overflow-hidden">
+                  <div class="progress-bar h-full rounded-full" style="width: ${req.status === 'approved' ? '100' : '50'}%"></div>
+                </div>
+                <span class="px-2 py-1 text-xs rounded-full ${getStatusClass(req.status)}">${getStatusLabel(req.status)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSuppliers() {
+      const content = document.getElementById('contentArea');
+      content.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          ${AppState.suppliers.map(sup => `
+            <div class="card rounded-xl p-5">
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <h4 class="font-medium text-white">${sup.name}</h4>
+                  <p class="text-xs text-slate-500">${sup.country} - ${sup.category}</p>
+                </div>
+                <span class="px-2 py-1 text-xs rounded-full ${sup.status === 'qualified' ? 'bg-emerald-500/20 text-emerald-400' : sup.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}">
+                  ${sup.status === 'qualified' ? 'Qualifie' : sup.status === 'pending' ? 'En attente' : 'Suspendu'}
+                </span>
+              </div>
+              <div class="flex items-center gap-1">
+                ${[1,2,3,4,5].map(i => `<svg class="w-4 h-4 ${i <= Math.round(sup.rating) ? 'text-amber-400' : 'text-slate-600'}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`).join('')}
+                <span class="ml-2 text-sm text-slate-400">${sup.rating}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderGRN() {
+      const content = document.getElementById('contentArea');
+      content.innerHTML = `
+        <div class="card rounded-xl p-4 sm:p-6">
+          <h3 class="font-display font-semibold text-white mb-4">Receptions recents</h3>
+          <div class="space-y-3">
+            ${AppState.grn.map(g => `
+              <div class="flex items-center gap-4 p-4 bg-slate-800/50 rounded-lg">
+                <span class="font-mono text-sm text-blue-400">${g.id}</span>
+                <div class="flex-1">
+                  <p class="text-sm text-white">${g.supplier}</p>
+                  <p class="text-xs text-slate-500">${g.items}</p>
+                </div>
+                <span class="px-2 py-1 text-xs rounded-full ${g.quality === 'conforme' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${g.quality === 'conforme' ? 'Conforme' : 'Partiel'}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderReporting() {
+      const content = document.getElementById('contentArea');
+      content.innerHTML = `
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div class="stat-card rounded-xl p-4"><p class="text-xs sm:text-sm text-slate-400 mb-1">Temps moyen</p><p class="text-xl sm:text-2xl font-display font-bold text-white">3.2 <span class="text-xs font-normal text-slate-500">jours</span></p></div>
+          <div class="stat-card rounded-xl p-4"><p class="text-xs sm:text-sm text-slate-400 mb-1">Taux approbation</p><p class="text-xl sm:text-2xl font-display font-bold text-emerald-400">78%</p></div>
+          <div class="stat-card rounded-xl p-4"><p class="text-xs sm:text-sm text-slate-400 mb-1">Taux rejet</p><p class="text-xl sm:text-2xl font-display font-bold text-red-400">14%</p></div>
+          <div class="stat-card rounded-xl p-4"><p class="text-xs sm:text-sm text-slate-400 mb-1">Economies</p><p class="text-xl sm:text-2xl font-display font-bold text-blue-400">12.4K</p></div>
+        </div>
+        <div class="card rounded-xl p-4 sm:p-6">
+          <h3 class="font-display font-semibold text-white mb-4">Export des donnees</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button class="flex items-center gap-3 p-4 bg-slate-800/50 rounded-lg hover:bg-slate-800 transition">
+              <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center"><svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg></div>
+              <div class="text-left"><p class="text-sm font-medium text-white">Export PDF</p><p class="text-xs text-slate-500">Rapport complet</p></div>
+            </button>
+            <button class="flex items-center gap-3 p-4 bg-slate-800/50 rounded-lg hover:bg-slate-800 transition">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center"><svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+              <div class="text-left"><p class="text-sm font-medium text-white">Export Excel</p><p class="text-xs text-slate-500">Donnees brutes</p></div>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderArchive() {
+      const content = document.getElementById('contentArea');
+      content.innerHTML = `
+        <div class="card rounded-xl p-4 sm:p-6 mb-6">
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input type="text" placeholder="Rechercher par ID, description..." class="input-field flex-1 px-4 py-3 rounded-lg text-sm">
+            <button class="btn-primary px-6 py-3 rounded-lg font-medium text-white text-sm">Rechercher</button>
+          </div>
+        </div>
+        <div class="card rounded-xl p-4 sm:p-6">
+          <h3 class="font-display font-semibold text-white mb-4">Documents archives (${AppState.requisitions.length})</h3>
+          <div class="space-y-3">
+            ${AppState.requisitions.slice(0, 5).map(req => `
+              <div class="flex items-center gap-4 p-4 bg-slate-800/50 rounded-lg">
+                <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <span class="font-mono text-sm text-emerald-400">${req.id}</span>
+                  <p class="text-sm text-slate-300">${req.description}</p>
+                </div>
+                <span class="px-2 py-1 text-xs rounded-full ${getStatusClass(req.status)}">${getStatusLabel(req.status)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderUsers() {
+      const content = document.getElementById('contentArea');
+      const roleColors = { demandeur: 'bg-blue-500/20 text-blue-400', manager: 'bg-purple-500/20 text-purple-400', finance: 'bg-amber-500/20 text-amber-400', procurement: 'bg-emerald-500/20 text-emerald-400', admin: 'bg-red-500/20 text-red-400' };
+      const roleLabels = { demandeur: 'Demandeur', manager: 'Manager', finance: 'Finance', procurement: 'Procurement', admin: 'Admin' };
+      content.innerHTML = `
+        <div class="card rounded-xl p-4 sm:p-6">
+          <h3 class="font-display font-semibold text-white mb-4">Utilisateurs actifs</h3>
+          <div class="space-y-3">
+            ${AppState.users.map(user => `
+              <div class="flex items-center gap-4 p-4 bg-slate-800/50 rounded-lg">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">${user.name.split(' ').map(n => n[0]).join('')}</div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-white">${user.name}</p>
+                  <p class="text-xs text-slate-500">${user.email}</p>
+                </div>
+                <span class="px-2 py-1 text-xs rounded-full ${roleColors[user.role]}">${roleLabels[user.role]}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // ==================== UTILITIES ====================
+    function getStatusClass(status) {
+      const classes = { 'pending_manager': 'status-pending', 'pending_finance': 'status-pending', 'pending_procurement': 'status-pending', 'approved': 'status-approved', 'rejected': 'status-rejected', 'delayed': 'status-delayed' };
+      return classes[status] || 'status-pending';
+    }
+
+    function getStatusLabel(status) {
+      const labels = { 'pending_manager': 'En attente Manager', 'pending_finance': 'En attente Finance', 'pending_procurement': 'En attente Achats', 'approved': 'Approuve', 'rejected': 'Rejete', 'delayed': 'En retard' };
+      return labels[status] || status;
+    }
+
+    function getNotificationIcon(type) {
+      const icons = {
+        approval: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        delay: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>',
+        success: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        info: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+      };
+      return icons[type] || icons.info;
+    }
+
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(amount);
+    }
+
+    function formatDate(dateStr) {
+      return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function closeModal() {
+      document.getElementById('modalContainer').classList.add('hidden');
+    }
+
+    function viewRequisition(id) {
+      const req = AppState.requisitions.find(r => r.id === id);
+      if (!req) return;
+      const modalBody = document.getElementById('modalBody');
+      modalBody.innerHTML = `
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="font-display text-lg font-semibold text-white">${req.id}</h3>
+          <button onclick="closeModal()" class="p-2 text-slate-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div class="p-3 bg-slate-800/50 rounded-lg"><p class="text-xs text-slate-500">Demandeur</p><p class="text-sm text-white">${req.requester}</p></div>
+          <div class="p-3 bg-slate-800/50 rounded-lg"><p class="text-xs text-slate-500">Budget</p><p class="text-sm text-emerald-400">${formatCurrency(req.budget)}</p></div>
+        </div>
+        <p class="text-sm text-slate-300 mb-4">${req.description}</p>
+        <button onclick="closeModal()" class="w-full btn-primary py-2.5 rounded-lg font-medium text-white text-sm">Fermer</button>
+      `;
+      document.getElementById('modalContainer').classList.remove('hidden');
+    }
+
+    function openNewRequisitionModal() {
+      const modalBody = document.getElementById('modalBody');
+      modalBody.innerHTML = `
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="font-display text-lg font-semibold text-white">Nouvelle requisition</h3>
+          <button onclick="closeModal()" class="p-2 text-slate-400 hover:text-white"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <form class="space-y-4">
+          <div><label class="block text-sm font-medium text-slate-300 mb-2">Description</label><textarea rows="3" class="input-field w-full px-4 py-2.5 rounded-lg text-sm" placeholder="Description..."></textarea></div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="block text-sm font-medium text-slate-300 mb-2">Quantite</label><input type="number" class="input-field w-full px-4 py-2.5 rounded-lg text-sm" placeholder="0"></div>
+            <div><label class="block text-sm font-medium text-slate-300 mb-2">Budget (EUR)</label><input type="number" class="input-field w-full px-4 py-2.5 rounded-lg text-sm" placeholder="0"></div>
+          </div>
+          <div class="flex gap-3 pt-4">
+            <button type="button" onclick="closeModal()" class="flex-1 px-4 py-2.5 rounded-lg border border-slate-600 text-slate-300 text-sm">Annuler</button>
+            <button type="submit" class="flex-1 btn-primary px-4 py-2.5 rounded-lg font-medium text-white text-sm" onclick="event.preventDefault(); alert('Requisition creee!'); closeModal();">Soumettre</button>
+          </div>
+        </form>
+      `;
+      document.getElementById('modalContainer').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
